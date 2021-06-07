@@ -28,12 +28,12 @@ class Column {
     private final String name;
     private final String methodSuffix;
 
-    public Column(@NotNull String name) {
+    Column(@NotNull String name) {
         if (name.isBlank()) {
             throw new IllegalArgumentException("name argument shall not be blank");
         }
         this.name = name;
-        this.methodSuffix = name.substring(0, 1).toUpperCase() + name.substring(1);
+        methodSuffix = name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
     @NotNull

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TextTableBuilder {
 
@@ -39,11 +40,9 @@ public class TextTableBuilder {
             throw new IllegalArgumentException("columnNames argument shall not be empty");
         }
 
-        for (String columnName : columnNames) {
-            Column column = new Column(columnName);
-            columns.add(column);
-        }
-
+        Arrays.stream(columnNames)
+                .map(Column::new)
+                .forEach(columns::add);
         return this;
     }
 
@@ -70,7 +69,7 @@ public class TextTableBuilder {
 
     @NotNull
     public TextTableBuilder header(boolean display) {
-        this.displayHeader = display;
+        displayHeader = display;
         return this;
     }
 
@@ -97,20 +96,21 @@ public class TextTableBuilder {
 
     @NotNull
     public String toCsv() {
-        if( columns.isEmpty()) {
+        if (columns.isEmpty()) {
             throw new ColumnNotDefinedException();
         }
 
         StringBuilder builder = new StringBuilder();
         if (displayHeader) {
-            appendHeader(builder);
-            builder.append(endOfLine);
+            String header = createHeader();
+            builder.append(header).append(endOfLine);
         }
 
         for (Object item : itemList) {
-            appendRow(builder, item);
-            builder.append(endOfLine);
+            String row = createItemRow(item);
+            builder.append(row).append(endOfLine);
         }
+
         if (!itemList.isEmpty()) {
             builder.deleteCharAt(builder.length() - 1);
         }
@@ -118,31 +118,17 @@ public class TextTableBuilder {
     }
 
 
-    private void appendHeader(StringBuilder builder) {
-        boolean first = true;
-        for (Column column : columns) {
-            if (first) {
-                first = false;
-            } else {
-                builder.append(separator);
-            }
-            builder.append(column.getName());
-        }
+    private String createHeader() {
+        return columns.stream()
+                .map(Column::getName)
+                .collect(Collectors.joining(separator));
     }
 
 
-    private void appendRow(StringBuilder builder, Object item) {
-        boolean first = true;
-        for (Column column : columns) {
-            if (first) {
-                first = false;
-            } else {
-                builder.append(separator);
-            }
-            String extractedValue = column.extractValue(item);
-            String value = extractedValue == null ? nullValue : extractedValue;
-            builder.append(value);
-        }
+    private String createItemRow(Object item) {
+        return columns.stream()
+                .map(it -> it.extractValue(item))
+                .map(it -> it == null ? nullValue : it)
+                .collect(Collectors.joining(separator));
     }
-
 }

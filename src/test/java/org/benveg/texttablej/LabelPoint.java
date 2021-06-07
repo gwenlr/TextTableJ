@@ -16,13 +16,13 @@
 
 package org.benveg.texttablej;
 
-public class LabelPoint {
+class LabelPoint {
 
     private final String label;
     private final int x;
     private final int y;
 
-    public LabelPoint(String label, int x, int y) {
+    LabelPoint(String label, int x, int y) {
         this.label = label;
         this.x = x;
         this.y = y;
