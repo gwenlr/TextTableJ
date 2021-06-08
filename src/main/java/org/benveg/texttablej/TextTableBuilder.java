@@ -18,20 +18,27 @@ package org.benveg.texttablej;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.benveg.texttablej.ConfigurationPropertyNames.COLUMN_SEPARATOR;
+import static org.benveg.texttablej.ConfigurationPropertyNames.ROW_SEPARATOR;
 
 public class TextTableBuilder {
 
     private final List<Column> columns = new ArrayList<>();
     private final List<Object> itemList = new ArrayList<>();
     private boolean displayHeader = true;
-    private String separator = ",";
-    private String endOfLine = "\n";
     private String nullValue = "null";
+
+    private final Map<String, Object> configurationProperties = new HashMap<>();
+
+    private final TableContentFormatter contentGenerator = new CsvTableContentFormatter();
+
+    public TextTableBuilder() {
+        configurationProperties.put(COLUMN_SEPARATOR, ",");
+        configurationProperties.put(ROW_SEPARATOR, "\n");
+    }
 
 
     @NotNull
@@ -76,16 +83,17 @@ public class TextTableBuilder {
 
     @NotNull
     public TextTableBuilder separator(@NotNull String separator) {
-        this.separator = separator;
+        configurationProperties.put(COLUMN_SEPARATOR, separator);
         return this;
     }
 
 
     @NotNull
     public TextTableBuilder endOfLine(@NotNull String endOfLine) {
-        this.endOfLine = endOfLine;
+        configurationProperties.put(ROW_SEPARATOR, endOfLine);
         return this;
     }
+
 
     @NotNull
     public TextTableBuilder nullValue(@NotNull String nullValue) {
@@ -96,39 +104,37 @@ public class TextTableBuilder {
 
     @NotNull
     public String toCsv() {
+        contentGenerator.reset(configurationProperties);
+
         if (columns.isEmpty()) {
             throw new ColumnNotDefinedException();
         }
 
-        StringBuilder builder = new StringBuilder();
         if (displayHeader) {
-            String header = createHeader();
-            builder.append(header).append(endOfLine);
+            List<String> columnNames = extractColumnNames();
+            contentGenerator.displayHeader(columnNames);
         }
 
         for (Object item : itemList) {
-            String row = createItemRow(item);
-            builder.append(row).append(endOfLine);
+            List<String> rowValues = extractRowValues(item);
+            contentGenerator.displayRow(rowValues);
         }
 
-        if (!itemList.isEmpty()) {
-            builder.deleteCharAt(builder.length() - 1);
-        }
-        return builder.toString();
+        return contentGenerator.generate();
     }
 
-
-    private String createHeader() {
+    @NotNull
+    private List<String> extractColumnNames() {
         return columns.stream()
                 .map(Column::getName)
-                .collect(Collectors.joining(separator));
+                .collect(Collectors.toList());
     }
 
-
-    private String createItemRow(Object item) {
+    @NotNull
+    private List<String> extractRowValues(Object item) {
         return columns.stream()
                 .map(it -> it.extractValue(item))
                 .map(it -> it == null ? nullValue : it)
-                .collect(Collectors.joining(separator));
+                .collect(Collectors.toList());
     }
 }
